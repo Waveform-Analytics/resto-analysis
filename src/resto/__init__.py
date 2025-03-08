@@ -25,7 +25,7 @@ def get_data(
     
     Args:
         tables: String or list of strings specifying which tables to fetch.
-               Currently supported: 'users'
+               Supported tables: 'users', 'visits', 'restaurants'
         clerk_secret_key: Optional Clerk secret key. If not provided, will use environment variable.
         supabase_url: Optional Supabase URL. If not provided, will use environment variable.
         supabase_key: Optional Supabase key. If not provided, will use environment variable.
@@ -51,12 +51,18 @@ def get_data(
     
     results = {}
     
+    valid_tables = {'users', 'visits', 'restaurants'}
+    unknown_tables = set(tables) - valid_tables
+    if unknown_tables:
+        raise ValueError(f"Unknown table(s): {', '.join(unknown_tables)}. Valid tables are: {', '.join(valid_tables)}")
+    
     for table in tables:
         if table == 'users':
-            # Get merged user data using DataLoader
             results[table] = loader.get_users(force_reload=True)
-        else:
-            raise ValueError(f"Unknown table: {table}")
+        elif table == 'visits':
+            results[table] = loader.get_visits(force_reload=True)
+        elif table == 'restaurants':
+            results[table] = loader.get_restaurants(force_reload=True)
     
     # Return single DataFrame if only one table requested
     if len(tables) == 1:

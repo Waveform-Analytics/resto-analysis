@@ -16,16 +16,54 @@ Or if you're using uv:
 uv pip install git+https://github.com/Waveform-Analytics/resto-analysis.git
 ```
 
-## Configuration
+## Usage
+
+### Available Tables
+
+The package provides access to three main tables:
+
+1. **Users**: Combined user data from Clerk and Supabase
+   - `user_id`: Unique identifier (from Clerk)
+   - `email`: User's email (from Clerk)
+   - `name`: User's name (from Supabase)
+   - `phone`: Contact number (from Supabase)
+   - `created_at`: Account creation timestamp (from Supabase)
+
+2. **Visits**: Restaurant visit records from Supabase
+   - `visit_id`: Unique visit identifier
+   - `user_id`: ID of the user who made the visit
+   - `restaurant_id`: ID of the visited restaurant
+   - `created_at`: Timestamp of the visit
+
+3. **Restaurants**: Restaurant information from Supabase
+   - `id`: Unique restaurant identifier
+   - `address`: Restaurant's physical address
+   - `url`: Restaurant's website URL
+   - `code`: Restaurant's unique code
+
+### Basic Usage
+
+```python
+from resto import get_data
+
+# Get data from a single table
+users_df = get_data('users')
+visits_df = get_data('visits')
+restaurants_df = get_data('restaurants')
+
+# Get multiple tables at once
+all_data = get_data(['users', 'visits', 'restaurants'])
+```
+
+### Configuration
 
 The package requires the following credentials:
-
 - Clerk Secret Key (for user authentication)
-- Supabase URL and Key (for additional user data)
+- Supabase URL and Key (for data storage)
 
 You can provide these credentials in two ways:
 
-### 1. Environment Variables
+#### 1. Environment Variables (Recommended)
 
 Set the following environment variables:
 
@@ -35,7 +73,7 @@ export SUPABASE_URL='your_supabase_url'
 export SUPABASE_KEY='your_supabase_key'
 ```
 
-### 2. Direct Configuration
+#### 2. Direct Configuration
 
 Pass credentials directly when calling functions:
 
@@ -50,51 +88,18 @@ df = get_data(
 )
 ```
 
-## Usage
-
-### Basic Usage
-
-```python
-from resto import get_data
-
-# Get user data (uses environment variables)
-users_df = get_data('users')
-```
-
 ### Data Sources
 
-The `users` table combines data from two sources:
+The package integrates data from multiple sources:
 
-1. **Clerk Users Table**:
-   - Primary source of truth for user authentication
-   - Contains `user_id` and `email` fields
-   - Complete email data for all users
+- **Clerk**: Primary source for user authentication
+  - Source of truth for `user_id` and `email`
+  - Complete email data for all users
 
-2. **Supabase Users Table**:
-   - Contains supplementary user metadata
-   - `id` field matches Clerk's `user_id`
-   - Additional fields: `name`, `phone`, `created_at`
-
-When fetching user data:
-- Data is merged using Clerk as the primary source (left join)
-- Email data is always sourced from Clerk
-- Additional fields from Supabase are included when available
-
-### Advanced Configuration
-
-```python
-from resto import init_config, get_data
-
-# Initialize configuration once
-init_config(
-    clerk_secret_key='your_clerk_secret_key',
-    supabase_url='your_supabase_url',
-    supabase_key='your_supabase_key'
-)
-
-# Make multiple calls using the same configuration
-users_df = get_data('users')
-```
+- **Supabase**: Primary data storage
+  - Extended user metadata (name, phone, etc.)
+  - Visit and restaurant data
+  - User data linked to Clerk via `id` = `user_id`
 
 ## Contributing
 
