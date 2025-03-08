@@ -6,7 +6,7 @@ import pandas as pd
 from .config import Config, init_config, set_config
 from .clerk import get_clerk_users
 from .supa import get_supabase_users
-from .data_processing import merge_user_data
+from .data_processing import loader
 
 __all__ = [
     'init_config',
@@ -54,10 +54,8 @@ def get_data(
     
     for table in tables:
         if table == 'users':
-            # Get and merge user data from both sources
-            clerk_users = get_clerk_users()
-            supabase_users = get_supabase_users()
-            results[table] = merge_user_data(clerk_users, supabase_users)
+            # Get merged user data using DataLoader
+            results[table] = loader.get_users(force_reload=True)
         else:
             raise ValueError(f"Unknown table: {table}")
     
