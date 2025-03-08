@@ -1,16 +1,14 @@
 """Example script demonstrating how to use the resto package."""
 
-from resto import get_data, init_config
+from resto import get_data
 
-# Initialize config with your API keys
-# You can also set these via environment variables
-init_config(
-    clerk_secret_key=None,  # Optional if set via env var
-    supabase_url=None,          # Optional if set via env var
-    supabase_key=None           # Optional if set via env var
-)
-
-# Get user data
+# Get user data - if you have API keys, you can pass them directly:
+# users_df = get_data('users',
+#                    clerk_secret_key='your_clerk_key',
+#                    supabase_url='your_supabase_url',
+#                    supabase_key='your_supabase_key')
+#
+# Or if you've set environment variables, just call without arguments:
 users_df = get_data('users')
 print("\nUser Data:")
 print(users_df.head())

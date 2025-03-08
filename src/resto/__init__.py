@@ -38,13 +38,12 @@ def get_data(
         ValueError: If an invalid table name is provided
         RuntimeError: If configuration is not properly initialized
     """
-    # Initialize configuration if credentials provided
-    if any([clerk_secret_key, supabase_url, supabase_key]):
-        init_config(
-            clerk_secret_key=clerk_secret_key,
-            supabase_url=supabase_url,
-            supabase_key=supabase_key
-        )
+    # Always initialize configuration, using provided credentials or None
+    init_config(
+        clerk_secret_key=clerk_secret_key,
+        supabase_url=supabase_url,
+        supabase_key=supabase_key
+    )
     
     # Convert single table to list for consistent processing
     if isinstance(tables, str):
