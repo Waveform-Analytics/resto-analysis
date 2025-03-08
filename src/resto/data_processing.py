@@ -1,67 +1,104 @@
-from typing import Dict
+from typing import Dict, Optional
 import pandas as pd
 
-from src.resto.clerk import get_clerk_users
-from src.resto.supa import get_users as get_supabase_users
-from src.resto.supa import get_visits, get_restaurants
+from resto.clerk import get_clerk_users
+from resto.supa import get_supabase_users as get_supabase_users
+from resto.supa import get_supabase_visits, get_supabase_restaurants
 
 
-def load_all_data() -> Dict[str, pd.DataFrame]:
-    """Load all data from Clerk and Supabase sources.
+class DataLoader:
+    """Handles loading and caching of data from Clerk and Supabase sources."""
     
-    Returns:
-        Dict[str, pd.DataFrame]: Dictionary containing the following DataFrames:
-            - clerk_users: User data from Clerk
-            - supabase_users: User data from Supabase
-            - visits: Visit data from Supabase
-            - restaurants: Restaurant data from Supabase
-    """
-    # Load data from both sources
-    clerk_users_df = get_clerk_users()
-    supabase_users_df = get_supabase_users()
-    visits_df = get_visits()
-    restaurants_df = get_restaurants()
+    def __init__(self):
+        self._data_cache: Dict[str, pd.DataFrame] = {}
     
-    return {
-        "clerk_users": clerk_users_df,
-        "supabase_users": supabase_users_df,
-        "visits": visits_df,
-        "restaurants": restaurants_df
-    }
+    def _get_from_cache(self, key: str) -> Optional[pd.DataFrame]:
+        return self._data_cache.get(key)
+    
+    def _set_cache(self, key: str, data: pd.DataFrame) -> None:
+        self._data_cache[key] = data
+    
+    def get_users(self, force_reload: bool = False) -> pd.DataFrame:
+        """Get merged user data from Clerk and Supabase.
+        
+        Args:
+            force_reload: If True, bypass cache and reload data from sources
+        
+        Returns:
+            pd.DataFrame: Merged DataFrame containing user information with columns:
+                - user_id (from Clerk)
+                - email (from Clerk)
+                - name (from Supabase if exists)
+                - phone (from Supabase if exists)
+                - created_at (from Supabase if exists)
+        """
+        if not force_reload:
+            cached = self._get_from_cache('users')
+            if cached is not None:
+                return cached
+        
+        # Load and merge user data
+        clerk_users = get_clerk_users()
+        supabase_users = get_supabase_users()
+        
+        merged_users = pd.merge(
+            clerk_users,
+            supabase_users,
+            left_on="user_id",
+            right_on="id",
+            how="left",
+            suffixes=('_clerk', '_supabase')
+        )
+        
+        # Keep only relevant columns, prioritizing Clerk data for email
+        final_columns = {
+            'user_id': merged_users['user_id'],
+            'email': merged_users['email_clerk'],
+            'name': merged_users['name'],
+            'phone': merged_users['phone'],
+            'created_at': merged_users['created_at']
+        }
+        
+        result = pd.DataFrame(final_columns)
+        self._set_cache('users', result)
+        return result
+    
+    def get_visits(self, force_reload: bool = False) -> pd.DataFrame:
+        """Get visits data from Supabase.
+        
+        Args:
+            force_reload: If True, bypass cache and reload data from source
+        
+        Returns:
+            pd.DataFrame: DataFrame containing visit information
+        """
+        if not force_reload:
+            cached = self._get_from_cache('visits')
+            if cached is not None:
+                return cached
+        
+        result = get_supabase_visits()
+        self._set_cache('visits', result)
+        return result
+    
+    def get_restaurants(self, force_reload: bool = False) -> pd.DataFrame:
+        """Get restaurants data from Supabase.
+        
+        Args:
+            force_reload: If True, bypass cache and reload data from source
+        
+        Returns:
+            pd.DataFrame: DataFrame containing restaurant information
+        """
+        if not force_reload:
+            cached = self._get_from_cache('restaurants')
+            if cached is not None:
+                return cached
+        
+        result = get_supabase_restaurants()
+        self._set_cache('restaurants', result)
+        return result
 
 
-def get_merged_user_data() -> pd.DataFrame:
-    """Load and merge user data from both Clerk and Supabase.
-    Prioritizes Clerk user data and only includes additional fields from Supabase
-    if they exist.
-    
-    Returns:
-        pd.DataFrame: Merged DataFrame containing user information with columns:
-            - user_id (from Clerk)
-            - email (from Clerk)
-            - name (from Supabase if exists)
-            - phone (from Supabase if exists)
-            - created_at (from Supabase if exists)
-    """
-    data = load_all_data()
-    
-    # Merge Clerk and Supabase user data on their respective ID fields
-    merged_users = pd.merge(
-        data["clerk_users"],
-        data["supabase_users"],
-        left_on="user_id",
-        right_on="id",
-        how="left",  # Keep all Clerk users, only matching Supabase data
-        suffixes=('_clerk', '_supabase')
-    )
-    
-    # Keep only relevant columns, prioritizing Clerk data for email
-    final_columns = {
-        'user_id': merged_users['user_id'],  # From Clerk
-        'email': merged_users['email_clerk'],  # From Clerk
-        'name': merged_users['name'],  # From Supabase
-        'phone': merged_users['phone'],  # From Supabase
-        'created_at': merged_users['created_at']  # From Supabase
-    }
-    
-    return pd.DataFrame(final_columns)
+# Create a singleton instance for convenience
+loader = DataLoader()

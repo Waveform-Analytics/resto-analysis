@@ -1,18 +1,16 @@
-import os
 from supabase import create_client, Client
 import pandas as pd
 
-def get_supabase_client() -> Client:
-    """Initialize and return Supabase client."""
-    url = os.getenv("SUPABASE_URL")
-    key = os.getenv("SUPABASE_KEY")
-    
-    if not url or not key:
-        raise ValueError("SUPABASE_URL and SUPABASE_KEY environment variables must be set")
-    
-    return create_client(url, key)
+from .config import get_config
 
-def get_users() -> pd.DataFrame:
+
+def _get_supabase_client() -> Client:
+    """Initialize and return Supabase client using current configuration."""
+    config = get_config()
+    return create_client(config.supabase_url, config.supabase_key)
+
+
+def get_supabase_users() -> pd.DataFrame:
     """Fetch users data from Supabase.
     
     Returns:
@@ -22,8 +20,11 @@ def get_users() -> pd.DataFrame:
             - name
             - phone
             - email
+            
+    Raises:
+        RuntimeError: If configuration is not initialized
     """
-    supabase = get_supabase_client()
+    supabase = _get_supabase_client()
     users_response = supabase.table("users").select("*").execute().data
     
     users = [
@@ -39,7 +40,7 @@ def get_users() -> pd.DataFrame:
     
     return pd.DataFrame(users)
 
-def get_visits() -> pd.DataFrame:
+def get_supabase_visits() -> pd.DataFrame:
     """Fetch visits data from Supabase.
     
     Returns:
@@ -48,8 +49,11 @@ def get_visits() -> pd.DataFrame:
             - user_id
             - restaurant_id
             - created_at
+            
+    Raises:
+        RuntimeError: If configuration is not initialized
     """
-    supabase = get_supabase_client()
+    supabase = _get_supabase_client()
     visits_response = supabase.table("visits").select(
         "visit_id, user_id, restaurant_id, created_at").execute().data
     
@@ -65,7 +69,7 @@ def get_visits() -> pd.DataFrame:
     
     return pd.DataFrame(visits)
 
-def get_restaurants() -> pd.DataFrame:
+def get_supabase_restaurants() -> pd.DataFrame:
     """Fetch restaurants data from Supabase.
     
     Returns:
@@ -74,8 +78,11 @@ def get_restaurants() -> pd.DataFrame:
             - address
             - url
             - code
+            
+    Raises:
+        RuntimeError: If configuration is not initialized
     """
-    supabase = get_supabase_client()
+    supabase = _get_supabase_client()
     restaurants_response = supabase.table("restaurants").select(
         "id, address, url, code").execute().data
     

@@ -1,6 +1,8 @@
-import os
 from clerk_backend_api import Clerk
 import pandas as pd
+
+from .config import get_config
+
 
 def get_clerk_users() -> pd.DataFrame:
     """
@@ -10,12 +12,13 @@ def get_clerk_users() -> pd.DataFrame:
         pd.DataFrame: DataFrame containing user information with columns:
             - user_id
             - email
+            
+    Raises:
+        RuntimeError: If configuration is not initialized
     """
-    clerk_key = os.getenv("CLERK_SECRET_KEY")
-    if not clerk_key:
-        raise ValueError("CLERK_SECRET_KEY environment variable not set")
-
-    with Clerk(bearer_auth=clerk_key) as clerk:
+    config = get_config()
+    
+    with Clerk(bearer_auth=config.clerk_secret_key) as clerk:
         response = clerk.users.list(request={})
     
     users_data = [
