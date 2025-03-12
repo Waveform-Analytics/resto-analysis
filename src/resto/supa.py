@@ -74,6 +74,7 @@ def get_supabase_restaurants() -> pd.DataFrame:
     
     Returns:
         pd.DataFrame: DataFrame containing restaurant information with columns:
+            - name
             - id
             - address
             - url
@@ -84,11 +85,12 @@ def get_supabase_restaurants() -> pd.DataFrame:
     """
     supabase = _get_supabase_client()
     restaurants_response = supabase.table("restaurants").select(
-        "id, address, url, code").execute().data
+        "id, name, address, url, code").execute().data
     
     restaurants = [
         {
             "id": restaurant["id"],
+            "name": restaurant["name"],
             "address": restaurant["address"],
             "url": restaurant["url"],
             "code": restaurant["code"],
